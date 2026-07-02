@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Pedidos - Admin{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-shopping-bag"></i> Gestión de Pedidos</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('admin') }}">Admin</a></li>
+                <li class="breadcrumb-item active">Pedidos</li>
+            </ol>
+        </nav>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stats-card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats_pedidos.total_pedidos or 0 }}</h4>
+                            <p class="mb-0">Pedidos (30 días)</p>
+                        </div>
+                        <div class="stats-icon">
+                            <i class="fas fa-shopping-cart fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>${{ "%.2f"|format(stats_pedidos.ingresos_totales or 0) }}</h4>
+                            <p class="mb-0">Ingresos Totales</p>
+                        </div>
+                        <div class="stats-icon">
+                            <i class="fas fa-dollar-sign fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>${{ "%.2f"|format(stats_pedidos.ticket_promedio or 0) }}</h4>
+                            <p class="mb-0">Ticket Promedio</p>
+                        </div>
+                        <div class="stats-icon">
+                            <i class="fas fa-receipt fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats_pedidos.clientes_unicos or 0 }}</h4>
+                            <p class="mb-0">Clientes Únicos</p>
+                        </div>
+                        <div class="stats-icon">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-list"></i> Historial de Pedidos</h5>
+        </div>
+        <div class="card-body">
+            {% if pedidos %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Cliente</th>
+                            <th>Fecha</th>
+                            <th>Items</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                            <th>Productos</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pedido in pedidos %}
+                        <tr>
+                            <td><strong>#{{ pedido.id }}</strong></td>
+                            <td>
+                                <i class="fas fa-user"></i> {{ pedido.username }}
+                            </td>
+                            <td>
+                                <small>{{ pedido.created_at[:16] }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ pedido.total_items or 0 }}</span>
+                            </td>
+                            <td>
+                                <strong class="text-success">${{ "%.2f"|format(pedido.total) }}</strong>
+                            </td>
+                            <td>
+                                <span class="badge {% if pedido.estado == 'completado' %}bg-success{% elif pedido.estado == 'pendiente' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                    {{ pedido.estado.title() }}
+                                </span>
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    {{ pedido.productos[:50] }}{% if pedido.productos and pedido.productos|length > 50 %}...{% endif %}
+                                </small>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" onclick="verDetalles({{pedido.id}})">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-success" onclick="cambiarEstado({{pedido.id}}, 'completado')">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-shopping-bag fa-3x text-muted mb-3"></i>
+                <h5>No hay pedidos registrados</h5>
+                <p class="text-muted">Los pedidos aparecerán aquí cuando los clientes realicen compras.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.stats-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+}
+
+.stats-icon {
+    opacity: 0.7;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+}
+
+.breadcrumb {
+    background: none;
+    padding: 0;
+}
+</style>
+
+<script>
+function verDetalles(pedidoId) {
+    alert(`Ver detalles del pedido #${pedidoId}`);
+}
+
+function cambiarEstado(pedidoId, nuevoEstado) {
+    if (confirm(`¿Cambiar estado del pedido #${pedidoId} a ${nuevoEstado}?`)) {
+        showToast(`Estado del pedido #${pedidoId} actualizado`, 'success');
+    }
+}
+</script>
+{% endblock %}

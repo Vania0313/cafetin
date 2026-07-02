@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}Reportes - Admin{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-robot"></i> Reportes Inteligentes</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('admin') }}">Admin</a></li>
+                <li class="breadcrumb-item active">Reportes</li>
+            </ol>
+        </nav>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card metric-card bg-gradient-primary text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-box fa-2x mb-2"></i>
+                    <h4>{{ metricas.productos_disponibles }}</h4>
+                    <small>Productos Disponibles</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card metric-card bg-gradient-warning text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                    <h4>{{ metricas.productos_bajo_stock }}</h4>
+                    <small>Bajo Stock</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card metric-card bg-gradient-info text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-users fa-2x mb-2"></i>
+                    <h4>{{ metricas.total_clientes }}</h4>
+                    <small>Clientes Totales</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card metric-card bg-gradient-success text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-shopping-cart fa-2x mb-2"></i>
+                    <h4>{{ metricas.pedidos_semana }}</h4>
+                    <small>Pedidos (7 días)</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card metric-card bg-gradient-secondary text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-receipt fa-2x mb-2"></i>
+                    <h4>${{ "%.0f"|format(metricas.ticket_promedio or 0) }}</h4>
+                    <small>Ticket Promedio</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card metric-card bg-gradient-dark text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-dollar-sign fa-2x mb-2"></i>
+                    <h4>${{ "%.0f"|format(metricas.ingresos_mes or 0) }}</h4>
+                    <small>Ingresos (30 días)</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header bg-gradient-primary text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-brain"></i> Recomendaciones de Stock
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for rec in recomendaciones_stock[:12] %}
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card recommendation-card h-100 
+                        {% if rec.urgencia == 'CRÍTICO' %}border-danger
+                        {% elif rec.urgencia == 'ALTO' %}border-warning
+                        {% elif rec.urgencia == 'EXCESO' %}border-info
+                        {% else %}border-success{% endif %}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="card-title mb-0">{{ rec.producto.nombre }}</h6>
+                                <span class="badge 
+                                    {% if rec.urgencia == 'CRÍTICO' %}bg-danger
+                                    {% elif rec.urgencia == 'ALTO' %}bg-warning
+                                    {% elif rec.urgencia == 'EXCESO' %}bg-info
+                                    {% else %}bg-success{% endif %}">
+                                    {{ rec.urgencia }}
+                                </span>
+                            </div>
+                            
+                            <div class="row text-center mb-2">
+                                <div class="col-4">
+                                    <small class="text-muted">Stock</small>
+                                    <div class="fw-bold">{{ rec.producto.stock }}</div>
+                                </div>
+                                <div class="col-4">
+                                    <small class="text-muted">Demanda</small>
+                                    <div class="fw-bold text-primary">{{ rec.demanda_predicha }}</div>
+                                </div>
+                                <div class="col-4">
+                                    <small class="text-muted">Días Stock</small>
+                                    <div class="fw-bold">{{ rec.dias_stock }}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-sm 
+                                {% if rec.urgencia == 'CRÍTICO' %}alert-danger
+                                {% elif rec.urgencia == 'ALTO' %}alert-warning
+                                {% elif rec.urgencia == 'EXCESO' %}alert-info
+                                {% else %}alert-success{% endif %} mb-2">
+                                <small>{{ rec.accion }}</small>
+                            </div>
+                            
+                            {% if rec.cantidad_sugerida > 0 %}
+                            <button class="btn btn-sm btn-outline-primary w-100">
+                                <i class="fas fa-plus"></i> Reabastecer {{ rec.cantidad_sugerida }}
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-header bg-gradient-success text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-trophy"></i> Top Productos por Ingresos (30 días)
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for producto in top_productos_ingresos %}
+                <div class="col-md-6 mb-3">
+                    <div class="card top-product-card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ loop.index }}. {{ producto.nombre }}</h6>
+                                    <small class="text-muted">
+                                        {{ producto.unidades_vendidas }} unidades • 
+                                        {{ producto.clientes_compraron }} clientes
+                                    </small>
+                                </div>
+                                <div class="text-end">
+                                    <div class="h5 text-success mb-0">${{ "%.0f"|format(producto.ingresos) }}</div>
+                                    <small class="text-muted">ingresos</small>
+                                </div>
+                            </div>
+                            <div class="progress mt-2" style="height: 5px;">
+                                <div class="progress-bar bg-success" 
+                                     style="width: {{ (producto.ingresos / top_productos_ingresos[0].ingresos * 100) if top_productos_ingresos else 0 }}%">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.metric-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-5px);
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(45deg, #667eea, #6293ed);
+}
+
+.bg-gradient-success {
+    background: linear-gradient(45deg, #56ab2f, #a8e6cf);
+}
+
+.bg-gradient-warning {
+    background: linear-gradient(45deg, #f84242, #f86060);
+}
+
+.bg-gradient-info {
+    background: linear-gradient(45deg, #4facfe, #00f2fe);
+}
+
+.bg-gradient-secondary {
+    background: linear-gradient(45deg, #757f9a, #d7dde8);
+}
+
+.bg-gradient-dark {
+    background: linear-gradient(45deg, #2c3e50, #34495e);
+}
+
+.recommendation-card {
+    transition: transform 0.3s ease;
+    border-width: 2px;
+}
+
+.recommendation-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.top-product-card {
+    border: none;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.top-product-card:hover {
+    transform: translateY(-2px);
+}
+
+.alert-sm {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+}
+
+.breadcrumb {
+    background: none;
+    padding: 0;
+}
+</style>
+{% endblock %}

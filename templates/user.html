@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+
+{% block title %}Tienda - Cafetín Antojitos{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="fas fa-store"></i> Nuestros Productos
+                </h2>
+                <a href="{{ url_for('promociones') }}" class="btn btn-warning">
+                    <i class="fas fa-robot"></i> Promociones
+                </a>
+            </div>
+            
+            <div class="category-filters mb-4">
+                <button class="btn btn-outline active" onclick="filterCategory('all')">
+                    <i class="fas fa-th"></i> Todos
+                </button>
+                {% for categoria in productos_por_categoria.keys() %}
+                <button class="btn btn-outline" onclick="filterCategory('{{ categoria }}')">
+                    {% if categoria == 'Bebidas Calientes' %}
+                        <i class="fas fa-coffee"></i>
+                    {% elif categoria == 'Bebidas Frías' %}
+                        <i class="fas fa-glass-whiskey"></i>
+                    {% elif categoria == 'Panadería' %}
+                        <i class="fas fa-bread-slice"></i>
+                    {% elif categoria == 'Comida' %}
+                        <i class="fas fa-utensils"></i>
+                    {% elif categoria == 'Postres' %}
+                        <i class="fas fa-birthday-cake"></i>
+                    {% else %}
+                        <i class="fas fa-tag"></i>
+                    {% endif %}
+                    {{ categoria }}
+                </button>
+                {% endfor %}
+            </div>
+            
+            {% for categoria, productos in productos_por_categoria.items() %}
+            <div class="category-section" data-category="{{ categoria }}">
+                <h4 class="category-title mb-3">
+                    {% if categoria == 'Bebidas Calientes' %}
+                        <i class="fas fa-coffee text-primary"></i>
+                    {% elif categoria == 'Bebidas Frías' %}
+                        <i class="fas fa-glass-whiskey text-info"></i>
+                    {% elif categoria == 'Panadería' %}
+                        <i class="fas fa-bread-slice text-warning"></i>
+                    {% elif categoria == 'Comida' %}
+                        <i class="fas fa-utensils text-success"></i>
+                    {% elif categoria == 'Postres' %}
+                        <i class="fas fa-birthday-cake text-danger"></i>
+                    {% else %}
+                        <i class="fas fa-tag text-secondary"></i>
+                    {% endif %}
+                    {{ categoria }}
+                </h4>
+                
+                <div class="row">
+                    {% for producto in productos %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card product-card h-100">
+                            <div class="product-image">
+                                {% if categoria == 'Bebidas Calientes' %}
+                                    ☕
+                                {% elif categoria == 'Bebidas Frías' %}
+                                    🥤
+                                {% elif categoria == 'Panadería' %}
+                                    🥐
+                                {% elif categoria == 'Comida' %}
+                                    🍽️
+                                {% elif categoria == 'Postres' %}
+                                    🍰
+                                {% else %}
+                                    🍴
+                                {% endif %}
+                            </div>
+                            <div class="card-body d-flex flex-column">
+                                <h6 class="card-title">{{ producto.nombre }}</h6>
+                                <p class="card-text text-muted small flex-grow-1">{{ producto.descripcion }}</p>
+                                <div class="mt-auto">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="h6 text-primary mb-0">${{ "%.2f"|format(producto.precio) }}</span>
+                                        <small class="text-muted">
+                                            <i class="fas fa-box"></i> {{ producto.stock }}
+                                        </small>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div class="popularity-stars">
+                                            {% set stars = (producto.popularidad / 20) | int %}
+                                            {% for i in range(5) %}
+                                                {% if i < stars %}
+                                                    <i class="fas fa-star text-warning"></i>
+                                                {% else %}
+                                                    <i class="far fa-star text-muted"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                        <small class="text-muted">{{ producto.popularidad }} pts</small>
+                                    </div>
+                                    <button class="btn btn-primary w-100" onclick="addToCart({{ producto.id }})" 
+                                            {% if producto.stock == 0 %}disabled{% endif %}>
+                                        {% if producto.stock == 0 %}
+                                            <i class="fas fa-times"></i> Sin Stock
+                                        {% else %}
+                                            <i class="fas fa-cart-plus"></i> Agregar al Carrito
+                                        {% endif %}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card cart-card shadow sticky-top">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-shopping-cart"></i> Mi Carrito
+                        {% if carrito_items %}
+                            <span class="badge bg-light text-primary ms-2">{{ carrito_items|length }}</span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="cart-items">
+                        {% if carrito_items %}
+                            {% set total = 0 %}
+                            {% for item in carrito_items %}
+                                {% set item_total = item.precio * item.cantidad %}
+                                {% set total = total + item_total %}
+                                <div class="cart-item mb-3 p-3 border rounded">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">{{ item.nombre }}</h6>
+                                            <small class="text-muted">
+                                                ${{ "%.2f"|format(item.precio) }} x {{ item.cantidad }}
+                                            </small>
+                                        </div>
+                                        <div class="text-end">
+                                            <div class="fw-bold text-primary">${{ "%.2f"|format(item_total) }}</div>
+                                            <button class="btn btn-sm btn-outline-danger mt-1" 
+                                                    onclick="removeFromCart({{ item.carrito_id }})">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                            <hr>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <strong class="h5">Total: ${{ "%.2f"|format(total) }}</strong>
+                            </div>
+                            <button class="btn btn-success w-100 mb-2" onclick="checkout()">
+                                <i class="fas fa-credit-card"></i> Proceder al Pago
+                            </button>
+                            <button class="btn btn-outline-secondary w-100" onclick="clearCart()">
+                                <i class="fas fa-trash"></i> Vaciar Carrito
+                            </button>
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">Tu carrito está vacío</p>
+                                <small class="text-muted">Agrega productos para comenzar tu pedido</small>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.category-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.category-filters .btn {
+    border-radius: 25px;
+    transition: all 0.3s ease;
+}
+
+.category-filters .btn.active {
+    background-color: #8b4513;
+    color: white;
+    border-color: #8b4513;
+}
+
+.category-title {
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.product-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.product-image {
+    height: 150px;
+    background: linear-gradient(45deg, #ffb43b 0%, #f9bb47 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    color: white;
+    border-radius: 10px 10px 0 0;
+}
+
+.cart-card {
+    top: 20px;
+}
+
+.cart-item {
+    background-color: #f8f9fa;
+    transition: background-color 0.3s ease;
+}
+
+.cart-item:hover {
+    background-color: #e9ecef;
+}
+
+.promo-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+}
+
+.promo-card .card-header {
+    background: rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.popularity-stars {
+    font-size: 0.8rem;
+}
+
+@media (max-width: 768px) {
+    .cart-card {
+        position: static !important;
+        top: auto !important;
+    }
+    
+    .category-filters {
+        justify-content: center;
+    }
+}
+</style>
+
+<script>
+function filterCategory(category) {
+    // Actualizar botones activos
+    document.querySelectorAll('.category-filters .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Mostrar/ocultar secciones
+    document.querySelectorAll('.category-section').forEach(section => {
+        if (category === 'all' || section.dataset.category === category) {
+            section.style.display = 'block';
+        } else {
+            section.style.display = 'none';
+        }
+    });
+}
+
+function checkout() {
+    if (confirm('¿Confirmar compra?')) {
+        fetch('/checkout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al procesar la compra');
+        });
+    }
+}
+
+function clearCart() {
+    if (confirm('¿Vaciar todo el carrito?')) {
+        // Implementar función para vaciar carrito
+        location.reload();
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}Análisis de Ventas - Admin{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-chart-line"></i> Análisis de Ventas</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('admin') }}">Admin</a></li>
+                <li class="breadcrumb-item active">Ventas</li>
+            </ol>
+        </nav>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-calendar-week"></i> Tendencias Semanales</h5>
+        </div>
+        <div class="card-body">
+            {% if ventas_semanales %}
+            <div class="row">
+                <div class="col-md-8">
+                    <canvas id="ventasSemanalesChart" height="100"></canvas>
+                </div>
+                <div class="col-md-4">
+                    <h6>Resumen Semanal</h6>
+                    {% for venta in ventas_semanales[:4] %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <small>Semana {{ venta.semana.split('-')[1] }}</small>
+                        <strong>${{ "%.0f"|format(venta.ingresos) }}</strong>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                <h5>No hay datos de ventas semanales</h5>
+                <p class="text-muted">Los datos aparecerán cuando haya más actividad de ventas.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-brain"></i> Patrones de Compra por Día</h5>
+                </div>
+                <div class="card-body">
+                    {% if patrones_semanales %}
+                    <canvas id="patronesDiaChart" height="80"></canvas>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-calendar fa-3x text-muted mb-3"></i>
+                        <h5>No hay datos de patrones</h5>
+                        <p class="text-muted">Los patrones se mostrarán con más datos de ventas.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-trophy"></i> Mejor Día</h5>
+                </div>
+                <div class="card-body">
+                    {% if patrones_semanales %}
+                    {% set mejor_dia = patrones_semanales | sort(attribute='ingresos', reverse=true) | first %}
+                    <div class="text-center">
+                        <h3 class="text-success">{{ mejor_dia.dia_semana }}</h3>
+                        <p class="mb-1">Ingresos: <strong>${{ "%.2f"|format(mejor_dia.ingresos) }}</strong></p>
+                        <p class="mb-1">Compras: <strong>{{ mejor_dia.total_compras }}</strong></p>
+                        <p class="mb-0">Ticket: <strong>${{ "%.2f"|format(mejor_dia.ticket_promedio) }}</strong></p>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-question-circle fa-3x text-muted mb-3"></i>
+                        <h6>Sin datos suficientes</h6>
+                        <p class="text-muted small">Necesitamos más ventas para determinar el mejor día.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0"><i class="fas fa-tags"></i> Rendimiento por Categoría</h5>
+        </div>
+        <div class="card-body">
+            {% if productos_categoria %}
+            <div class="row">
+                {% for categoria, productos in productos_categoria | groupby('categoria') %}
+                <div class="col-md-6 mb-4">
+                    <h6 class="border-bottom pb-2">
+                        {% if categoria == 'Bebidas Calientes' %}
+                            <i class="fas fa-coffee text-primary"></i>
+                        {% elif categoria == 'Bebidas Frías' %}
+                            <i class="fas fa-glass-whiskey text-info"></i>
+                        {% elif categoria == 'Panadería' %}
+                            <i class="fas fa-bread-slice text-warning"></i>
+                        {% elif categoria == 'Comida' %}
+                            <i class="fas fa-utensils text-success"></i>
+                        {% elif categoria == 'Postres' %}
+                            <i class="fas fa-birthday-cake text-danger"></i>
+                        {% endif %}
+                        {{ categoria }}
+                    </h6>
+                    {% for producto in productos[:3] %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <small class="fw-bold">{{ producto.nombre }}</small><br>
+                            <small class="text-muted">{{ producto.total_vendido }} unidades</small>
+                        </div>
+                        <div class="text-end">
+                            <small class="text-success fw-bold">${{ "%.0f"|format(producto.ingresos_generados) }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-tags fa-3x text-muted mb-3"></i>
+                <h5>No hay datos por categoría</h5>
+                <p class="text-muted">Los datos aparecerán cuando haya ventas registradas.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Alerta: Productos con Baja Rotación</h5>
+        </div>
+        <div class="card-body">
+            {% if productos_baja_rotacion %}
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Stock Actual</th>
+                            <th>Vendidos (30 días)</th>
+                            <th>Ratio Stock/Ventas</th>
+                            <th>Recomendación</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for producto in productos_baja_rotacion[:10] %}
+                        <tr>
+                            <td>{{ producto.nombre }}</td>
+                            <td><span class="badge bg-secondary">{{ producto.stock }}</span></td>
+                            <td><span class="badge bg-warning">{{ producto.vendidos_30_dias }}</span></td>
+                            <td>
+                                {% if producto.ratio_stock_ventas %}
+                                    {{ "%.1f"|format(producto.ratio_stock_ventas) }}x
+                                {% else %}
+                                    Sin ventas
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if producto.vendidos_30_dias == 0 %}
+                                    <span class="badge bg-danger">Promocionar urgente</span>
+                                {% elif producto.ratio_stock_ventas > 10 %}
+                                    <span class="badge bg-warning">Reducir stock</span>
+                                {% else %}
+                                    <span class="badge bg-info">Monitorear</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle"></i> ¡Excelente! Todos los productos tienen buena rotación.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+{% if ventas_semanales %}
+const ventasCtx = document.getElementById('ventasSemanalesChart').getContext('2d');
+new Chart(ventasCtx, {
+    type: 'line',
+    data: {
+        labels: [{% for venta in ventas_semanales | reverse %}'Sem {{ venta.semana.split("-")[1] }}'{% if not loop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Ingresos ($)',
+            data: [{% for venta in ventas_semanales | reverse %}{{ venta.ingresos }}{% if not loop.last %},{% endif %}{% endfor %}],
+            borderColor: 'rgb(75, 192, 192)',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            tension: 0.4
+        }, {
+            label: 'Productos Vendidos',
+            data: [{% for venta in ventas_semanales | reverse %}{{ venta.productos_vendidos }}{% if not loop.last %},{% endif %}{% endfor %}],
+            borderColor: 'rgb(255, 99, 132)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.4,
+            yAxisID: 'y1'
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+            },
+            y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                grid: {
+                    drawOnChartArea: false,
+                },
+            }
+        }
+    }
+});
+{% endif %}
+
+{% if patrones_semanales %}
+const patronesCtx = document.getElementById('patronesDiaChart').getContext('2d');
+new Chart(patronesCtx, {
+    type: 'bar',
+    data: {
+        labels: [{% for patron in patrones_semanales %}'{{ patron.dia_semana }}'{% if not loop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Ingresos por Día',
+            data: [{% for patron in patrones_semanales %}{{ patron.ingresos }}{% if not loop.last %},{% endif %}{% endfor %}],
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.8)',
+                'rgba(54, 162, 235, 0.8)',
+                'rgba(255, 205, 86, 0.8)',
+                'rgba(75, 192, 192, 0.8)',
+                'rgba(153, 102, 255, 0.8)',
+                'rgba(255, 159, 64, 0.8)',
+                'rgba(199, 199, 199, 0.8)'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+{% endif %}
+</script>
+{% endblock %}

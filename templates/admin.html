@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}Panel de Administración{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4">
+        <i class="fas fa-cog"></i> Panel de Administración
+    </h2>
+    
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card admin-nav-card">
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <a href="{{ url_for('admin_pedidos') }}" class="admin-nav-link">
+                                <i class="fas fa-shopping-bag fa-2x mb-2"></i>
+                                <h6>Pedidos</h6>
+                                <small class="text-muteds">Gestionar pedidos</small>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('admin_ventas') }}" class="admin-nav-link">
+                                <i class="fas fa-chart-line fa-2x mb-2"></i>
+                                <h6>Ventas</h6>
+                                <small class="text-muteds">Análisis inteligente</small>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('admin_reportes') }}" class="admin-nav-link">
+                                <i class="fas fa-robot fa-2x mb-2"></i>
+                                <h6>Reportes</h6>
+                                <small class="text-muteds">Recomendaciones</small>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('admin') }}" class="admin-nav-link active">
+                                <i class="fas fa-cog fa-2x mb-2"></i>
+                                <h6>General</h6>
+                                <small class="text-muteds">Vista general</small>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-box"></i> Gestión de Productos
+                    </h5>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">
+                        <i class="fas fa-plus"></i> Agregar Producto
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre</th>
+                                    <th>Precio</th>
+                                    <th>Stock</th>
+                                    <th>Categoría</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for producto in productos %}
+                                <tr>
+                                    <td>{{ producto.id }}</td>
+                                    <td>{{ producto.nombre }}</td>
+                                    <td>${{ "%.2f"|format(producto.precio) }}</td>
+                                    <td>
+                                        <span class="badge {% if producto.stock > 10 %}bg-success{% elif producto.stock > 0 %}bg-warning{% else %}bg-danger{% endif %}">
+                                            {{ producto.stock }}
+                                        </span>
+                                    </td>
+                                    <td>{{ producto.categoria }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users"></i> Usuarios Registrados
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Usuario</th>
+                                    <th>Rol</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for usuario in usuarios %}
+                                <tr>
+                                    <td>{{ usuario.username }}</td>
+                                    <td>
+                                        <span class="badge {% if usuario.role == 'admin' %}bg-danger{% else %}bg-primary{% endif %}">
+                                            {{ usuario.role }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card shadow mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar"></i> Estadísticas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h4 class="text-primary">{{ productos|length }}</h4>
+                            <small class="text-muted">Productos</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-success">{{ usuarios|length }}</h4>
+                            <small class="text-muted">Usuarios</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addProductModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus"></i> Agregar Nuevo Producto
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('add_product') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label">Nombre del Producto</label>
+                        <input type="text" class="form-control" id="nombre" name="nombre" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="descripcion" name="descripcion" rows="3"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="precio" class="form-label">Precio</label>
+                                <input type="number" step="0.01" class="form-control" id="precio" name="precio" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="stock" class="form-label">Stock</label>
+                                <input type="number" class="form-control" id="stock" name="stock" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="categoria" class="form-label">Categoría</label>
+                        <select class="form-control" id="categoria" name="categoria" required>
+                            <option value="">Seleccionar categoría</option>
+                            <option value="Bebidas Calientes">Bebidas Calientes</option>
+                            <option value="Bebidas Frías">Bebidas Frías</option>
+                            <option value="Panadería">Panadería</option>
+                            <option value="Comida">Comida</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="imagen" class="form-label">URL de Imagen</label>
+                        <input type="url" class="form-control" id="imagen" name="imagen" placeholder="/static/images/producto.jpg">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Agregar Producto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.admin-nav-card {
+    background: linear-gradient(135deg, #8b4513 0%, #8b4513 100%);
+    color: white;
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.text-muteds{
+    color: white;
+}
+
+.admin-nav-link {
+    color: white;
+    text-decoration: none;
+    display: block;
+    padding: 1rem;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.admin-nav-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.admin-nav-link.active {
+    background: rgba(255, 255, 255, 0.2);
+}
+</style>
+{% endblock %}

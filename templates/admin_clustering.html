@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cafetín Antojitos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="icon" href="{{ url_for('static', filename='logo.png') }}" type="image/x-icon">
+    <style>
+        .cluster-card {
+            border-left: 5px solid;
+            transition: transform 0.2s;
+        }
+        .cluster-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .customer-badge {
+            font-size: 0.8em;
+            padding: 0.25rem 0.5rem;
+        }
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .chart-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('admin') }}">
+                <i class="fas fa-coffee"></i> Cafetín Antojitos
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('admin') }}">Dashboard</a>
+                <a class="nav-link active" href="{{ url_for('admin_clustering') }}">Clustering</a>
+                <a class="nav-link" href="{{ url_for('logout') }}">Cerrar Sesión</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h1><i class="fas fa-users"></i> Análisis de Clustering de Clientes</h1>
+                    <button class="btn btn-primary" onclick="updateClustering()">
+                        <i class="fas fa-sync-alt"></i> Actualizar Clustering
+                    </button>
+                </div>
+                <p class="text-muted">Segmentación automática de clientes usando algoritmo K-Means</p>
+            </div>
+        </div>
+
+        {% if clustering_result %}
+        <div class="row mb-4">
+            {% for cluster_id, analysis in clustering_result.cluster_analysis.items() %}
+            <div class="col-md-3 mb-3">
+                <div class="card cluster-card h-100" style="border-left-color: {{ cluster_recommendations[cluster_id].color }};">
+                    <div class="card-body">
+                        <h5 class="card-title" style="color: {{ cluster_recommendations[cluster_id].color }};">
+                            {{ cluster_recommendations[cluster_id].title }}
+                        </h5>
+                        <p class="card-text small text-muted">{{ cluster_recommendations[cluster_id].description }}</p>
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <h4 class="mb-0">{{ analysis.count }}</h4>
+                                <small class="text-muted">Clientes</small>
+                            </div>
+                            <div class="col-6">
+                                <h4 class="mb-0">${{ "%.2f"|format(analysis.avg_total_spent) }}</h4>
+                                <small class="text-muted">Gasto Prom.</small>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <i class="fas fa-shopping-cart"></i> {{ "%.1f"|format(analysis.avg_frequency) }} compras/sem
+                                <br>
+                                <i class="fas fa-clock"></i> {{ "%.0f"|format(analysis.avg_days_since_last) }} días últ. compra
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if plot_url %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="chart-container">
+                    <h3><i class="fas fa-chart-bar"></i> Visualización de Clusters</h3>
+                    <img src="data:image/png;base64,{{ plot_url }}" class="img-fluid" alt="Clustering Visualization">
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="row">
+            {% for cluster_id, analysis in clustering_result.cluster_analysis.items() %}
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header" style="background-color: {{ cluster_recommendations[cluster_id].color }}; color: white;">
+                        <h5 class="mb-0">
+                            <i class="fas fa-users"></i> {{ cluster_recommendations[cluster_id].title }}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>Frecuencia</th>
+                                        <th>Total Gastado</th>
+                                        <th>Última Compra</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for customer in clustering_result.customers %}
+                                    {% if customer.cluster_id == cluster_id %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ customer.username }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ customer.categoria_favorita }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info customer-badge">
+                                                {{ "%.1f"|format(customer.frecuencia_compra) }}/sem
+                                            </span>
+                                        </td>
+                                        <td>${{ "%.2f"|format(customer.total_gastado) }}</td>
+                                        <td>{{ "%.0f"|format(customer.dias_desde_ultima_compra) }} días</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-bullhorn"></i> Estrategias de Marketing Recomendadas</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for cluster_id, recommendations in cluster_recommendations.items() %}
+                            <div class="col-md-6 mb-3">
+                                <div class="border-start border-4 ps-3" style="border-color: {{ recommendations.color }} !important;">
+                                    <h6 style="color: {{ recommendations.color }};">{{ recommendations.title }}</h6>
+                                    <ul class="list-unstyled">
+                                        {% for strategy in recommendations.strategies %}
+                                        <li class="mb-1">
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                            <small>{{ strategy }}</small>
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            No hay suficientes datos para realizar clustering. Se necesitan al menos 4 clientes con historial de compras.
+        </div>
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function updateClustering() {
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Actualizando...';
+            btn.disabled = true;
+
+            fetch('/admin/clustering/update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al actualizar clustering');
+            })
+            .finally(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>
